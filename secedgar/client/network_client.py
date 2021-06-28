@@ -185,6 +185,20 @@ class NetworkClient:
         """
         return BeautifulSoup(self.get_response(path, params, **kwargs).text, features='lxml')
 
+    def get_xml_links(self, index_soup):
+        links = [link.string for link in index_soup.find_all("filinghref")]
+        xml_links = []
+        for link in links:
+            with requests.Session() as session:
+                response = session.get(link)
+            soup = BeautifulSoup(response.text, features='lxml')
+            for l in soup.find_all('a', href=True):
+                href = l['href']
+                if href.endswith('.xml'):
+                    if (not href.endswith('cal.xml')) and (not href.endswith('def.xml')) and (not href.endswith('pre.xml')) and (not href.endswith('lab.xml')):
+                        xml_links.append(self._BASE + href)
+        return xml_links
+
     async def fetch(self, link, session):
         """Asynchronous get request.
 

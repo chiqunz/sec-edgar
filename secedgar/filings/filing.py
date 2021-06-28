@@ -166,24 +166,23 @@ class Filing(AbstractFiling):
             if available.
         """
         self.params['CIK'] = cik
-        links = []
+        xml_urls = []
         self.params["start"] = 0  # set start back to 0 before paginating
 
-        while self.count is None or len(links) < self.count:
+        while self.count is None or len(xml_urls) < self.count:
             data = self.client.get_soup(self.path, self.params, **kwargs)
-            links.extend([link.string for link in data.find_all("filinghref")])
+            new_links = self.client.get_xml_links(data)
+            xml_urls.extend(new_links)
             self.params["start"] += self.client.batch_size
             if len(data.find_all("filinghref")) == 0:  # no more filings
                 break
 
-        txt_urls = [link[:link.rfind("-")].strip() + ".txt" for link in links]
-
-        if isinstance(self.count, int) and len(txt_urls) < self.count:
+        if isinstance(self.count, int) and len(xml_urls) < self.count:
             warnings.warn("Only {num} of {count} filings were found for {cik}.".format(
-                num=len(txt_urls), count=self.count, cik=cik))
+                num=len(xml_urls), count=self.count, cik=cik))
 
         # Takes `count` filings at most
-        return txt_urls[:self.count]
+        return xml_urls[:self.count]
 
     def save(self, directory, dir_pattern=None, file_pattern=None):
         """Save files in specified directory.
